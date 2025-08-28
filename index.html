@@ -112,19 +112,33 @@
         
         .bot-curious .bot-reaction-icon { transform: translateX(-50%) scale(1); opacity: 1; }
 
-        /* Falling Digits */
-        .falling-digit {
+        /* Falling Digits & Congrats Animation */
+        .falling-digit, .confetti {
             position: fixed;
+            pointer-events: none;
+        }
+        .falling-digit {
             color: white;
             font-size: 24px;
             font-weight: bold;
-            pointer-events: none;
             text-shadow: 0 0 10px #14b8a6;
             animation: fall 2s linear forwards;
         }
         @keyframes fall {
             to {
                 transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        .confetti {
+            width: 10px;
+            height: 20px;
+            opacity: 0.9;
+            animation: fall-and-sway 4s linear forwards;
+        }
+        @keyframes fall-and-sway {
+            to {
+                transform: translateY(105vh) rotate(720deg);
                 opacity: 0;
             }
         }
@@ -157,7 +171,7 @@
 </head>
 <body class="flex items-center justify-center min-h-screen">
     <canvas id="background-canvas"></canvas>
-    <div id="digit-fall-container"></div>
+    <div id="animation-container"></div>
 
     <!-- Bot Character -->
     <div id="tutor-bot-container">
@@ -181,8 +195,17 @@
 
         <!-- Footer / Input -->
         <footer class="p-4 max-w-2xl mx-auto">
+             <div id="image-preview-container" class="hidden relative w-20 h-20 mb-2 ml-2">
+                <img id="image-preview" class="w-full h-full object-cover rounded-md border-2 border-teal-400 shadow-lg">
+                <button id="remove-image" type="button" class="absolute top-0 right-0 -mt-2 -mr-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md font-bold">&times;</button>
+            </div>
             <form id="math-form" class="flex items-center gap-2">
+                <label for="image-upload" class="p-3 rounded-full bg-white/10 border border-gray-600 cursor-pointer hover:bg-white/20 transition-colors duration-200 shadow-sm backdrop-blur-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                    <input id="image-upload" type="file" class="hidden" accept="image/png, image/jpeg, image/webp" />
+                </label>
                 <textarea id="problem" name="problem" rows="1" class="flex-grow block w-full rounded-full bg-gray-800/50 border border-gray-600 shadow-xl text-white focus:border-teal-500 focus:ring-teal-500 sm:text-base p-3 px-5 resize-none backdrop-blur-sm" placeholder="Ask a math question..."></textarea>
+                <button id="hint-button" type="button" class="bg-yellow-500 text-white p-3 rounded-full font-semibold hover:bg-yellow-600 focus:outline-none transition-transform duration-200 hover:scale-110 shadow-lg">💡</button>
                 <button type="submit" id="submit-button" class="bg-teal-500 text-white p-3 rounded-full font-semibold hover:bg-teal-600 focus:outline-none transition-transform duration-200 hover:scale-110 shadow-lg">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
                 </button>
@@ -197,10 +220,11 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        let symbols = [];
+        let floatingSymbols = [];
         const mathChars = ['+', '−', '×', '÷', '√', '∫', '∑', '∞', 'π', 'α', 'β', 'θ', 'ƒ(x)', '∂', '∇', '≅', '≠', '≤', '≥'];
 
-        class Symbol {
+        // FIX: Renamed 'Symbol' to 'FloatingSymbol' to avoid conflict with native JS Symbol
+        class FloatingSymbol {
             constructor(x, y, char, speed, size) {
                 this.x = x; this.y = y; this.char = char; this.speed = speed; this.size = size;
                 this.opacity = Math.random();
@@ -221,31 +245,31 @@
             }
         }
 
-        function initSymbols() {
+        function initFloatingSymbols() {
             for (let i = 0; i < 100; i++) {
                 const x = Math.random() * canvas.width;
                 const y = Math.random() * canvas.height;
                 const char = mathChars[Math.floor(Math.random() * mathChars.length)];
                 const speed = Math.random() * 1 + 0.5;
                 const size = Math.random() * 20 + 10;
-                symbols.push(new Symbol(x, y, char, speed, size));
+                floatingSymbols.push(new FloatingSymbol(x, y, char, speed, size));
             }
         }
 
         function animateCanvas() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            symbols.forEach(s => s.update());
+            floatingSymbols.forEach(s => s.update());
             requestAnimationFrame(animateCanvas);
         }
 
-        initSymbols();
+        initFloatingSymbols();
         animateCanvas();
 
         window.addEventListener('resize', () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            symbols = [];
-            initSymbols();
+            floatingSymbols = [];
+            initFloatingSymbols();
         });
 
         // --- Core Chat Logic ---
@@ -254,9 +278,15 @@
         const form = document.getElementById('math-form');
         const problemInput = document.getElementById('problem');
         const submitButton = document.getElementById('submit-button');
-        const digitFallContainer = document.getElementById('digit-fall-container');
+        const hintButton = document.getElementById('hint-button');
+        const animationContainer = document.getElementById('animation-container');
+        const imageUpload = document.getElementById('image-upload');
+        const imagePreviewContainer = document.getElementById('image-preview-container');
+        const imagePreview = document.getElementById('image-preview');
+        const removeImageBtn = document.getElementById('remove-image');
 
         let chatHistory = [];
+        let imageBase64 = null;
 
         // --- UI & Animation Functions ---
         function setBotState(state) {
@@ -264,18 +294,18 @@
             if (state) tutorBot.classList.add(`bot-${state}`);
         }
 
-        function appendMessage(sender, message) {
+        function appendMessage(sender, message, imageUrl = null) {
             const messageWrapper = document.createElement('div');
             let bubbleClass = sender === 'user' ? 'user-bubble' : 'bot-bubble';
             let justification = sender === 'user' ? 'justify-end' : 'justify-start';
             messageWrapper.className = `flex ${justification} message-wrapper`;
             
             messageWrapper.innerHTML = `<div class="${bubbleClass} p-3 rounded-2xl max-w-md shadow-lg">
+                ${imageUrl ? `<img src="${imageUrl}" class="rounded-md mb-2 max-w-xs border-2 border-white/50">` : ''}
                 <p>${message}</p>
             </div>`;
             
             chatContainer.appendChild(messageWrapper);
-            // Trigger animation
             setTimeout(() => messageWrapper.classList.add('show'), 10);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
@@ -283,39 +313,68 @@
         function triggerFallingDigits(text) {
             const inputRect = problemInput.getBoundingClientRect();
             for (let i = 0; i < text.length; i++) {
-                if (/\d/.test(text[i])) { // Only animate digits
+                if (/\d/.test(text[i])) {
                     const digit = document.createElement('div');
                     digit.className = 'falling-digit';
                     digit.innerText = text[i];
                     digit.style.left = `${inputRect.left + (i * 10)}px`;
                     digit.style.top = `${inputRect.top}px`;
-                    digitFallContainer.appendChild(digit);
+                    animationContainer.appendChild(digit);
                     setTimeout(() => digit.remove(), 2000);
                 }
             }
         }
+
+        function triggerCongratsAnimation() {
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.animationDelay = Math.random() * 2 + 's';
+                const colors = ['#14b8a6', '#8b5cf6', '#ec4899', '#f59e0b'];
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                animationContainer.appendChild(confetti);
+                setTimeout(() => confetti.remove(), 4000);
+            }
+        }
+        
+        // --- Image Handling ---
+        imageUpload.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imageBase64 = e.target.result;
+                    imagePreview.src = imageBase64;
+                    imagePreviewContainer.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        removeImageBtn.addEventListener('click', () => {
+            imageBase64 = null;
+            imageUpload.value = '';
+            imagePreviewContainer.classList.add('hidden');
+        });
 
         // --- Gemini API Call ---
         async function callGeminiApi(history) {
             const apiKey = "AIzaSyCJPZaLsbyaCehMyjHERioggJUO_dMIvZI"; // Handled by environment
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
             
-            // --- UPDATED & STRICTER SYSTEM PROMPT ---
-            const systemPrompt = `You are 'Socratic Mind,' an expert AI math tutor for 12th-grade students. Your personality is patient, encouraging, and endlessly curious. Your SOLE method of teaching is the Socratic method.
-
-            **Core Directive: NEVER give a direct answer or solve a step for the student.** Your entire purpose is to guide them to find the answer themselves through a structured conversation.
-
-            **Your Interaction Flow MUST follow these steps:**
-            1.  **Acknowledge & Ask:** When the student presents a new problem, first acknowledge it positively (e.g., "Great problem! Let's break it down."). Then, ask a very broad, open-ended question to get them started. Examples: "What's the first thing that comes to mind here?", "What do you think the first step could be?", or "Have you seen a problem like this before?".
-            2.  **Guide Step-by-Step:** Based on their response, guide them through the VERY NEXT logical step by asking a targeted question.
-                * If they are correct, praise them ("Exactly! 🎉 Now that we've done that, what should we do next?") and ask the next guiding question.
-                * If they are incorrect, gently correct them by asking a question that reveals the mistake. Example: "That's a good thought! But what happens to the sign when we move that term across the equals sign?", "You're on the right track, but let's double-check the formula for integration by parts. What is it again?".
-            3.  **One Question ONLY:** You MUST ask only ONE question at a time and then STOP. Wait for the student's reply before continuing. Do not chain questions together.
-            4.  **Break It Down:** For complex problems, focus on one small piece at a time. Don't ask about the entire problem, just the immediate next step.
-            5.  **The Final Step:** ONLY when the student has successfully arrived at the final answer on their own, you can then confirm their answer and provide the full, clean solution for their reference. Start this final message with "You've got it! Fantastic work! 🎉 Here is the complete solution for your notes:".
-
+            const systemPrompt = `You are 'Socratic Mind,' an expert AI math tutor. Your SOLE method of teaching is the Socratic method.
+            **Core Directive: NEVER give a direct answer.** Guide the student to find the answer themselves.
+            **Interaction Flow:**
+            1.  **Acknowledge & Ask:** When a student presents a problem, acknowledge it ("Great problem!"), then ask a broad, open-ended question to start. ("What's the first thing that comes to mind here?").
+            2.  **Guide Step-by-Step:** Based on their response, ask a targeted question for the VERY NEXT step.
+                * If correct, praise them ("Exactly! 🎉 Now what?") and ask the next guiding question.
+                * If incorrect, gently correct by asking a question that reveals the mistake ("Good thought! But what happens to the sign when...").
+            3.  **One Question ONLY:** You MUST ask only ONE question at a time and then STOP.
+            4.  **Hint Request:** If the user says "hint", provide a small clue, not a full step. ("Have you considered the quadratic formula?").
+            5.  **The Final Step:** ONLY when the student has solved it, confirm their answer and provide the full solution. Start this final message with "You've got it! Fantastic work! 🎉".
             **Style Rules:**
-            - **Tone:** Always be friendly, patient, and motivating. Use emojis like 🤔, 💡, 👍, 🎉.
+            - **Tone:** Friendly, patient, motivating. Use emojis like 🤔, 💡, 👍, 🎉.
             - **LaTeX:** Use LaTeX for ALL math notation (e.g., $x^2$).`;
 
             const payload = {
@@ -328,35 +387,48 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            if (!response.ok) {
+                 const errorBody = await response.text();
+                 console.error("API Error Response:", errorBody);
+                 throw new Error(`HTTP error! status: ${response.status}`);
+            }
             const result = await response.json();
-            if (result.candidates && result.candidates.length > 0) {
+            if (result.candidates && result.candidates.length > 0 && result.candidates[0].content.parts) {
                 return result.candidates[0].content.parts[0].text;
             }
             return "I'm not sure how to respond to that. Could you try rephrasing?";
         }
 
         // --- Main Logic ---
-        form.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const userInput = problemInput.value.trim();
-            if (!userInput) return;
+        async function handleSubmission(userInput, isHint = false) {
+            if (!userInput && !imageBase64) return;
 
-            triggerFallingDigits(userInput);
-            appendMessage('user', userInput);
-            chatHistory.push({ role: 'user', parts: [{ text: userInput }] });
+            const displayInput = isHint ? "Hint, please! 💡" : userInput;
+            appendMessage('user', displayInput, imageBase64);
+            
+            const userParts = [];
+            if (userInput) userParts.push({ text: userInput });
+            if (imageBase64) {
+                userParts.push({ inlineData: { mimeType: imageBase64.split(';')[0].split(':')[1], data: imageBase64.split(',')[1] } });
+            }
+            chatHistory.push({ role: 'user', parts: userParts });
 
+            // Reset inputs
             problemInput.value = '';
+            imageBase64 = null;
+            imageUpload.value = '';
+            imagePreviewContainer.classList.add('hidden');
             problemInput.style.height = 'auto';
             submitButton.disabled = true;
+            hintButton.disabled = true;
 
             try {
                 const solutionText = await callGeminiApi(chatHistory);
                 chatHistory.push({ role: 'model', parts: [{ text: solutionText }] });
 
-                // Determine bot reaction from response
-                if (["Correct!", "Perfect!", "Exactly!", "Great job!", "You've got it!"].some(kw => solutionText.includes(kw))) {
+                if (solutionText.includes("You've got it! Fantastic work!")) {
                     setBotState('happy');
+                    triggerCongratsAnimation();
                 } else if (["That's a good try", "You're close!", "Let's double-check"].some(kw => solutionText.includes(kw))) {
                     setBotState('puzzled');
                 } else {
@@ -368,12 +440,24 @@
 
             } catch (error) {
                 console.error('Error:', error);
-                appendMessage('ai', '<p>Oops! Something went wrong. Please try again.</p>');
+                appendMessage('ai', '<p>I seem to be having a little trouble connecting. Please try again in a moment.</p>');
             } finally {
                 submitButton.disabled = false;
-                // Reset bot state after a delay
+                hintButton.disabled = false;
                 setTimeout(() => setBotState('default'), 2000);
             }
+        }
+
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const userInput = problemInput.value.trim();
+            if (!userInput && !imageBase64) return;
+            triggerFallingDigits(userInput);
+            handleSubmission(userInput);
+        });
+        
+        hintButton.addEventListener('click', () => {
+            handleSubmission("hint", true);
         });
         
         problemInput.addEventListener('input', () => {
