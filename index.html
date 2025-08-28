@@ -20,7 +20,8 @@
     <style>
         body {
             font-family: 'Nunito', sans-serif;
-            background-color: #111827;
+            /* Updated colorful background */
+            background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
             overflow: hidden;
             color: white;
         }
@@ -32,7 +33,7 @@
             height: 100%;
             z-index: -1;
         }
-        /* Bot Character Styles */
+        /* New Bot Character Styles */
         #tutor-bot-container {
             position: fixed;
             top: 10%;
@@ -42,106 +43,129 @@
         }
         #tutor-bot {
             width: 150px;
-            height: 150px;
+            height: 180px;
             position: relative;
-            transition: transform 0.3s ease-in-out;
+            animation: bot-float 6s ease-in-out infinite;
         }
-        .bot-body {
-            width: 100%;
-            height: 100%;
-            background: #1f2937;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 
-                        inset 0 3px 10px rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            position: relative;
-        }
-        .bot-face {
-            width: 100px;
-            height: 70px;
-            background: #4f46e5;
+        .bot-antenna {
             position: absolute;
-            top: 30px;
-            left: 25px;
-            border-radius: 10px;
+            top: -10px;
+            left: 50%;
+            width: 4px;
+            height: 20px;
+            background: #9ca3af;
+            border-radius: 2px;
+            transform-origin: bottom;
+        }
+        .bot-antenna::after {
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: -3px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #34d399;
+            box-shadow: 0 0 10px #34d399;
+        }
+        .bot-head {
+            width: 80px;
+            height: 70px;
+            background: linear-gradient(145deg, #e0e7ff, #c7d2fe);
+            border-radius: 50% 50% 40% 40%;
+            margin: 10px auto 0;
+            position: relative;
+            border: 2px solid #fff;
+        }
+        .bot-face-screen {
+            width: 60px;
+            height: 40px;
+            background: #000;
+            position: absolute;
+            top: 15px;
+            left: 10px;
+            border-radius: 5px;
             overflow: hidden;
-            box-shadow: 0 0 20px rgba(79, 70, 229, 0.5);
-            transition: background-color 0.3s;
+            box-shadow: inset 0 0 10px #4f46e5;
+            transition: box-shadow 0.3s;
         }
         .bot-eye {
             position: absolute;
-            top: 20px;
-            width: 15px;
-            height: 25px;
-            background: #fff;
+            top: 12px;
+            width: 8px;
+            height: 12px;
+            background: #5eead4;
             border-radius: 50%;
-            transition: all 0.2s;
+            box-shadow: 0 0 8px #5eead4;
+            animation: blink 4s infinite;
+            transition: background-color 0.3s, box-shadow 0.3s;
         }
-        .bot-eye.left { left: 20px; }
-        .bot-eye.right { right: 20px; }
-        .bot-mouth {
-            position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
+        .bot-eye.left { left: 15px; }
+        .bot-eye.right { right: 15px; }
+        .bot-smile {
+             position: absolute;
+             bottom: 8px;
+             left: 50%;
+             transform: translateX(-50%);
+             width: 15px;
+             height: 5px;
+             border: 2px solid #5eead4;
+             border-top-color: transparent;
+             border-radius: 0 0 10px 10px;
+        }
+        .bot-body {
+            width: 100px;
+            height: 90px;
+            background: linear-gradient(145deg, #d1d5db, #9ca3af);
+            border-radius: 30px;
+            margin: -10px auto 0;
+            position: relative;
+            border: 2px solid #fff;
+        }
+         .bot-logo {
             width: 30px;
-            height: 5px;
-            background: #fff;
-            border-radius: 5px;
-            transition: all 0.2s;
-        }
-        .bot-reaction-icon {
+            height: 30px;
+            background: #facc15;
+            border-radius: 50%;
             position: absolute;
-            top: -20px;
+            top: 50%;
             left: 50%;
-            transform: translateX(-50%) scale(0);
-            font-size: 30px;
-            opacity: 0;
-            transition: transform 0.3s, opacity 0.3s;
+            transform: translate(-50%, -50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: #1f2937;
         }
 
         /* Bot States & Animations */
-        .bot-happy .bot-face { background: #22c55e; box-shadow: 0 0 30px #22c55e; }
-        .bot-happy .bot-eye { height: 20px; top: 25px; border-radius: 10px 10px 0 0; }
-        .bot-happy .bot-mouth { width: 40px; height: 20px; border-radius: 0 0 20px 20px; border: 5px solid white; background: transparent; bottom: 5px; }
+        @keyframes bot-float { 0%, 100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-20px) rotate(5deg); } }
+        @keyframes blink { 0%, 90%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
         
-        .bot-puzzled .bot-face { background: #f97316; box-shadow: 0 0 30px #f97316; }
-        .bot-puzzled .bot-eye.left { transform: rotate(-15deg); }
-        .bot-puzzled .bot-eye.right { transform: rotate(15deg); }
-        .bot-puzzled .bot-mouth { width: 20px; border-radius: 50%; }
-        
-        .bot-curious .bot-reaction-icon { transform: translateX(-50%) scale(1); opacity: 1; }
+        /* Puzzled/Wrong State */
+        .bot-puzzled .bot-face-screen { box-shadow: 0 0 20px #ef4444; }
+        .bot-puzzled .bot-eye { background-color: #ef4444; box-shadow: 0 0 15px #ef4444; }
 
-        /* Falling Digits & Congrats Animation */
-        .falling-digit, .confetti {
-            position: fixed;
-            pointer-events: none;
+        /* Celebrate/Correct State */
+        .bot-celebrate { animation: bot-roll 0.8s ease-in-out, bot-float 6s ease-in-out infinite; }
+        .bot-celebrate .bot-face-screen { box-shadow: 0 0 20px #22c55e; }
+        .bot-celebrate .bot-eye.right { animation: bot-delayed-wink 1.2s ease-in-out; }
+        .bot-celebrate .bot-eye { background-color: #22c55e; box-shadow: 0 0 15px #22c55e; }
+
+
+        @keyframes bot-roll {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.2); }
+            100% { transform: rotate(360deg) scale(1); }
         }
-        .falling-digit {
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
-            text-shadow: 0 0 10px #14b8a6;
-            animation: fall 2s linear forwards;
+        
+        @keyframes bot-delayed-wink {
+            0%, 65% { transform: scaleY(1); } /* Wait for the roll to mostly finish */
+            75%, 95% { transform: scaleY(0.1); } /* Then wink */
+            100% { transform: scaleY(1); }
         }
-        @keyframes fall {
-            to {
-                transform: translateY(100vh) rotate(360deg);
-                opacity: 0;
-            }
-        }
-        .confetti {
-            width: 10px;
-            height: 20px;
-            opacity: 0.9;
-            animation: fall-and-sway 4s linear forwards;
-        }
-        @keyframes fall-and-sway {
-            to {
-                transform: translateY(105vh) rotate(720deg);
-                opacity: 0;
-            }
-        }
+
 
         /* Chat Layout */
         #chat-container {
@@ -176,14 +200,18 @@
     <!-- Bot Character -->
     <div id="tutor-bot-container">
         <div id="tutor-bot">
-            <div class="bot-body">
-                <div class="bot-face">
+            <div class="bot-antenna" style="transform: translateX(-15px) rotate(-15deg);"></div>
+            <div class="bot-antenna" style="transform: translateX(15px) rotate(15deg);"></div>
+            <div class="bot-head">
+                <div class="bot-face-screen">
                     <div class="bot-eye left"></div>
                     <div class="bot-eye right"></div>
-                    <div class="bot-mouth"></div>
+                    <div class="bot-smile"></div>
                 </div>
             </div>
-            <div class="bot-reaction-icon">🤔</div>
+            <div class="bot-body">
+                <div class="bot-logo">😊</div>
+            </div>
         </div>
     </div>
 
@@ -220,56 +248,139 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        let floatingSymbols = [];
-        const mathChars = ['+', '−', '×', '÷', '√', '∫', '∑', '∞', 'π', 'α', 'β', 'θ', 'ƒ(x)', '∂', '∇', '≅', '≠', '≤', '≥'];
+        const mouse = { x: undefined, y: undefined, radius: 150 };
+        window.addEventListener('mousemove', (event) => {
+            mouse.x = event.clientX;
+            mouse.y = event.clientY;
+        });
 
-        // FIX: Renamed 'Symbol' to 'FloatingSymbol' to avoid conflict with native JS Symbol
-        class FloatingSymbol {
-            constructor(x, y, char, speed, size) {
-                this.x = x; this.y = y; this.char = char; this.speed = speed; this.size = size;
-                this.opacity = Math.random();
-            }
-            draw() {
-                ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
-                ctx.font = `${this.size}px 'Nunito'`;
-                ctx.fillText(this.char, this.x, this.y);
+        let spaceObjects = [];
+        const mathChars = ['½', '¾', '⅓', '1', '3', '4', '5', '+', '−', '×', '÷', '√', 'π', 'α', 'β'];
+        const ballColors = [
+            ['#ef4444', '#3b82f6'], // red/blue
+            ['#22c55e', '#f97316', '#a855f7'], // green/orange/purple
+            ['#facc15', '#ef4444', '#a855f7', '#65a30d'] // yellow/red/purple/lime
+        ];
+
+        class SpaceObject {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.baseX = this.x;
+                this.baseY = this.y;
+                this.density = (Math.random() * 30) + 1;
+                this.speedX = (Math.random() - 0.5) * 0.5;
+                this.speedY = (Math.random() - 0.5) * 0.5;
+                
+                const typeChance = Math.random();
+                if (typeChance > 0.95) {
+                    this.type = 'ball';
+                    this.size = Math.random() * 30 + 20;
+                    this.colors = ballColors[Math.floor(Math.random() * ballColors.length)];
+                } else if (typeChance > 0.85) {
+                    this.type = 'math';
+                    this.char = mathChars[Math.floor(Math.random() * mathChars.length)];
+                    this.size = Math.random() * 20 + 15;
+                } else {
+                    this.type = 'star';
+                    this.size = Math.random() * 2 + 1;
+                }
             }
             update() {
-                this.y += this.speed;
-                if (this.y > canvas.height + this.size) {
-                    this.y = -this.size;
-                    this.x = Math.random() * canvas.width;
-                    this.speed = Math.random() * 1 + 0.5;
+                // Mouse interaction
+                let dx = mouse.x - this.x;
+                let dy = mouse.y - this.y;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+                let forceDirectionX = dx / distance;
+                let forceDirectionY = dy / distance;
+                let maxDistance = mouse.radius;
+                let force = (maxDistance - distance) / maxDistance;
+                let directionX = forceDirectionX * force * this.density;
+                let directionY = forceDirectionY * force * this.density;
+
+                if (distance < mouse.radius) {
+                    this.x -= directionX;
+                    this.y -= directionY;
+                } else {
+                    if (this.x !== this.baseX) {
+                        let dx = this.x - this.baseX;
+                        this.x -= dx/10;
+                    }
+                     if (this.y !== this.baseY) {
+                        let dy = this.y - this.baseY;
+                        this.y -= dy/10;
+                    }
                 }
-                this.draw();
+
+                // Standard movement
+                this.x += this.speedX;
+                this.y += this.speedY;
+                if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+                
+                this.baseX += this.speedX;
+                this.baseY += this.speedY;
+                 if (this.baseX < 0 || this.baseX > canvas.width) this.speedX *= -1;
+                if (this.baseY < 0 || this.baseY > canvas.height) this.speedY *= -1;
+            }
+            draw() {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                ctx.lineWidth = 2;
+
+                if (this.type === 'ball') {
+                    const segments = this.colors.length;
+                    const anglePerSegment = (Math.PI * 2) / segments;
+                    for (let i = 0; i < segments; i++) {
+                        ctx.beginPath();
+                        ctx.moveTo(this.x, this.y);
+                        ctx.arc(this.x, this.y, this.size, i * anglePerSegment, (i + 1) * anglePerSegment);
+                        ctx.closePath();
+                        ctx.fillStyle = this.colors[i];
+                        ctx.fill();
+                        ctx.stroke();
+                    }
+                } else if (this.type === 'math') {
+                    ctx.font = `${this.size}px 'Nunito'`;
+                    ctx.fillText(this.char, this.x, this.y);
+                } else { // star
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
             }
         }
 
-        function initFloatingSymbols() {
-            for (let i = 0; i < 100; i++) {
-                const x = Math.random() * canvas.width;
-                const y = Math.random() * canvas.height;
-                const char = mathChars[Math.floor(Math.random() * mathChars.length)];
-                const speed = Math.random() * 1 + 0.5;
-                const size = Math.random() * 20 + 10;
-                floatingSymbols.push(new FloatingSymbol(x, y, char, speed, size));
+        function initSpace() {
+            for (let i = 0; i < 150; i++) {
+                spaceObjects.push(new SpaceObject());
             }
         }
 
         function animateCanvas() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            floatingSymbols.forEach(s => s.update());
+            const gradient = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 0, canvas.width/2, canvas.height/2, Math.max(canvas.width, canvas.height)/1.5);
+            gradient.addColorStop(0, 'rgba(129, 140, 248, 0.2)');
+            gradient.addColorStop(0.5, 'rgba(59, 130, 246, 0.1)');
+            gradient.addColorStop(1, 'rgba(12, 10, 36, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            spaceObjects.forEach(s => {
+                s.update();
+                s.draw();
+            });
             requestAnimationFrame(animateCanvas);
         }
 
-        initFloatingSymbols();
+        initSpace();
         animateCanvas();
 
         window.addEventListener('resize', () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            floatingSymbols = [];
-            initFloatingSymbols();
+            spaceObjects = [];
+            initSpace();
         });
 
         // --- Core Chat Logic ---
@@ -310,34 +421,6 @@
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
         
-        function triggerFallingDigits(text) {
-            const inputRect = problemInput.getBoundingClientRect();
-            for (let i = 0; i < text.length; i++) {
-                if (/\d/.test(text[i])) {
-                    const digit = document.createElement('div');
-                    digit.className = 'falling-digit';
-                    digit.innerText = text[i];
-                    digit.style.left = `${inputRect.left + (i * 10)}px`;
-                    digit.style.top = `${inputRect.top}px`;
-                    animationContainer.appendChild(digit);
-                    setTimeout(() => digit.remove(), 2000);
-                }
-            }
-        }
-
-        function triggerCongratsAnimation() {
-            for (let i = 0; i < 100; i++) {
-                const confetti = document.createElement('div');
-                confetti.className = 'confetti';
-                confetti.style.left = Math.random() * 100 + 'vw';
-                confetti.style.animationDelay = Math.random() * 2 + 's';
-                const colors = ['#14b8a6', '#8b5cf6', '#ec4899', '#f59e0b'];
-                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-                animationContainer.appendChild(confetti);
-                setTimeout(() => confetti.remove(), 4000);
-            }
-        }
-        
         // --- Image Handling ---
         imageUpload.addEventListener('change', (event) => {
             const file = event.target.files[0];
@@ -369,7 +452,7 @@
             1.  **Acknowledge & Ask:** When a student presents a problem, acknowledge it ("Great problem!"), then ask a broad, open-ended question to start. ("What's the first thing that comes to mind here?").
             2.  **Guide Step-by-Step:** Based on their response, ask a targeted question for the VERY NEXT step.
                 * If correct, praise them ("Exactly! 🎉 Now what?") and ask the next guiding question.
-                * If incorrect, gently correct by asking a question that reveals the mistake ("Good thought! But what happens to the sign when...").
+                * If incorrect, gently correct them by starting with "Not quite, but that's a good thought! Let's try again. 🤔" and then asking a question that reveals the mistake ("What happens to the sign when...").
             3.  **One Question ONLY:** You MUST ask only ONE question at a time and then STOP.
             4.  **Hint Request:** If the user says "hint", provide a small clue, not a full step. ("Have you considered the quadratic formula?").
             5.  **The Final Step:** ONLY when the student has solved it, confirm their answer and provide the full solution. Start this final message with "You've got it! Fantastic work! 🎉".
@@ -426,10 +509,9 @@
                 const solutionText = await callGeminiApi(chatHistory);
                 chatHistory.push({ role: 'model', parts: [{ text: solutionText }] });
 
-                if (solutionText.includes("You've got it! Fantastic work!")) {
-                    setBotState('happy');
-                    triggerCongratsAnimation();
-                } else if (["That's a good try", "You're close!", "Let's double-check"].some(kw => solutionText.includes(kw))) {
+                if (solutionText.includes("Exactly! 🎉") || solutionText.includes("You've got it!")) {
+                    setBotState('celebrate');
+                } else if (["Not quite", "You're close!", "Let's double-check"].some(kw => solutionText.includes(kw))) {
                     setBotState('puzzled');
                 } else {
                     setBotState('default');
@@ -452,7 +534,6 @@
             event.preventDefault();
             const userInput = problemInput.value.trim();
             if (!userInput && !imageBase64) return;
-            triggerFallingDigits(userInput);
             handleSubmission(userInput);
         });
         
