@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socratic Mind</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        MathJax = {
+          tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+          svg: { fontCache: 'global' }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+    </script>
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #111827;
+            overflow: hidden;
+            color: white;
+        }
+        #background-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        /* Bot Character Styles */
+        #tutor-bot-container {
+            position: fixed;
+            top: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+        }
+        #tutor-bot {
+            width: 150px;
+            height: 150px;
+            position: relative;
+            transition: transform 0.3s ease-in-out;
+        }
+        .bot-body {
+            width: 100%;
+            height: 100%;
+            background: #1f2937;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 
+                        inset 0 3px 10px rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+        .bot-face {
+            width: 100px;
+            height: 70px;
+            background: #4f46e5;
+            position: absolute;
+            top: 30px;
+            left: 25px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(79, 70, 229, 0.5);
+            transition: background-color 0.3s;
+        }
+        .bot-eye {
+            position: absolute;
+            top: 20px;
+            width: 15px;
+            height: 25px;
+            background: #fff;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+        .bot-eye.left { left: 20px; }
+        .bot-eye.right { right: 20px; }
+        .bot-mouth {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 5px;
+            background: #fff;
+            border-radius: 5px;
+            transition: all 0.2s;
+        }
+        .bot-reaction-icon {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%) scale(0);
+            font-size: 30px;
+            opacity: 0;
+            transition: transform 0.3s, opacity 0.3s;
+        }
+
+        /* Bot States & Animations */
+        .bot-happy .bot-face { background: #22c55e; box-shadow: 0 0 30px #22c55e; }
+        .bot-happy .bot-eye { height: 20px; top: 25px; border-radius: 10px 10px 0 0; }
+        .bot-happy .bot-mouth { width: 40px; height: 20px; border-radius: 0 0 20px 20px; border: 5px solid white; background: transparent; bottom: 5px; }
+        
+        .bot-puzzled .bot-face { background: #f97316; box-shadow: 0 0 30px #f97316; }
+        .bot-puzzled .bot-eye.left { transform: rotate(-15deg); }
+        .bot-puzzled .bot-eye.right { transform: rotate(15deg); }
+        .bot-puzzled .bot-mouth { width: 20px; border-radius: 50%; }
+        
+        .bot-curious .bot-reaction-icon { transform: translateX(-50%) scale(1); opacity: 1; }
+
+        /* Falling Digits */
+        .falling-digit {
+            position: fixed;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            pointer-events: none;
+            text-shadow: 0 0 10px #14b8a6;
+            animation: fall 2s linear forwards;
+        }
+        @keyframes fall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        /* Chat Layout */
+        #chat-container {
+            position: fixed;
+            bottom: 80px;
+            left: 0;
+            right: 0;
+            height: 50vh;
+            padding: 1rem;
+            overflow-y: auto;
+            -webkit-mask-image: linear-gradient(to top, black 80%, transparent 100%);
+            mask-image: linear-gradient(to top, black 80%, transparent 100%);
+        }
+        .message-wrapper {
+            transition: transform 0.3s, opacity 0.3s;
+            transform: scale(0.9);
+            opacity: 0;
+        }
+        .message-wrapper.show {
+            transform: scale(1);
+            opacity: 1;
+        }
+        .bot-bubble { background: linear-gradient(135deg, #14b8a6, #8b5cf6); color: white; }
+        .user-bubble { background-color: rgba(255, 255, 255, 0.1); color: #e5e7eb; backdrop-filter: blur(5px); border: 1px solid rgba(255, 255, 255, 0.2); }
+
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+    <canvas id="background-canvas"></canvas>
+    <div id="digit-fall-container"></div>
+
+    <!-- Bot Character -->
+    <div id="tutor-bot-container">
+        <div id="tutor-bot">
+            <div class="bot-body">
+                <div class="bot-face">
+                    <div class="bot-eye left"></div>
+                    <div class="bot-eye right"></div>
+                    <div class="bot-mouth"></div>
+                </div>
+            </div>
+            <div class="bot-reaction-icon">🤔</div>
+        </div>
+    </div>
+
+    <!-- Chat UI -->
+    <div id="chat-ui-container" class="fixed bottom-0 left-0 right-0 w-full">
+        <div id="chat-container" class="space-y-4">
+            <!-- Messages Appear Here -->
+        </div>
+
+        <!-- Footer / Input -->
+        <footer class="p-4 max-w-2xl mx-auto">
+            <form id="math-form" class="flex items-center gap-2">
+                <textarea id="problem" name="problem" rows="1" class="flex-grow block w-full rounded-full bg-gray-800/50 border border-gray-600 shadow-xl text-white focus:border-teal-500 focus:ring-teal-500 sm:text-base p-3 px-5 resize-none backdrop-blur-sm" placeholder="Ask a math question..."></textarea>
+                <button type="submit" id="submit-button" class="bg-teal-500 text-white p-3 rounded-full font-semibold hover:bg-teal-600 focus:outline-none transition-transform duration-200 hover:scale-110 shadow-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+                </button>
+            </form>
+        </footer>
+    </div>
+
+    <script>
+        // --- Canvas Background Animation ---
+        const canvas = document.getElementById('background-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let symbols = [];
+        const mathChars = ['+', '−', '×', '÷', '√', '∫', '∑', '∞', 'π', 'α', 'β', 'θ', 'ƒ(x)', '∂', '∇', '≅', '≠', '≤', '≥'];
+
+        class Symbol {
+            constructor(x, y, char, speed, size) {
+                this.x = x; this.y = y; this.char = char; this.speed = speed; this.size = size;
+                this.opacity = Math.random();
+            }
+            draw() {
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+                ctx.font = `${this.size}px 'Nunito'`;
+                ctx.fillText(this.char, this.x, this.y);
+            }
+            update() {
+                this.y += this.speed;
+                if (this.y > canvas.height + this.size) {
+                    this.y = -this.size;
+                    this.x = Math.random() * canvas.width;
+                    this.speed = Math.random() * 1 + 0.5;
+                }
+                this.draw();
+            }
+        }
+
+        function initSymbols() {
+            for (let i = 0; i < 100; i++) {
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height;
+                const char = mathChars[Math.floor(Math.random() * mathChars.length)];
+                const speed = Math.random() * 1 + 0.5;
+                const size = Math.random() * 20 + 10;
+                symbols.push(new Symbol(x, y, char, speed, size));
+            }
+        }
+
+        function animateCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            symbols.forEach(s => s.update());
+            requestAnimationFrame(animateCanvas);
+        }
+
+        initSymbols();
+        animateCanvas();
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            symbols = [];
+            initSymbols();
+        });
+
+        // --- Core Chat Logic ---
+        const tutorBot = document.getElementById('tutor-bot');
+        const chatContainer = document.getElementById('chat-container');
+        const form = document.getElementById('math-form');
+        const problemInput = document.getElementById('problem');
+        const submitButton = document.getElementById('submit-button');
+        const digitFallContainer = document.getElementById('digit-fall-container');
+
+        let chatHistory = [];
+
+        // --- UI & Animation Functions ---
+        function setBotState(state) {
+            tutorBot.className = ''; // Reset classes
+            if (state) tutorBot.classList.add(`bot-${state}`);
+        }
+
+        function appendMessage(sender, message) {
+            const messageWrapper = document.createElement('div');
+            let bubbleClass = sender === 'user' ? 'user-bubble' : 'bot-bubble';
+            let justification = sender === 'user' ? 'justify-end' : 'justify-start';
+            messageWrapper.className = `flex ${justification} message-wrapper`;
+            
+            messageWrapper.innerHTML = `<div class="${bubbleClass} p-3 rounded-2xl max-w-md shadow-lg">
+                <p>${message}</p>
+            </div>`;
+            
+            chatContainer.appendChild(messageWrapper);
+            // Trigger animation
+            setTimeout(() => messageWrapper.classList.add('show'), 10);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        function triggerFallingDigits(text) {
+            const inputRect = problemInput.getBoundingClientRect();
+            for (let i = 0; i < text.length; i++) {
+                if (/\d/.test(text[i])) { // Only animate digits
+                    const digit = document.createElement('div');
+                    digit.className = 'falling-digit';
+                    digit.innerText = text[i];
+                    digit.style.left = `${inputRect.left + (i * 10)}px`;
+                    digit.style.top = `${inputRect.top}px`;
+                    digitFallContainer.appendChild(digit);
+                    setTimeout(() => digit.remove(), 2000);
+                }
+            }
+        }
+
+        // --- Gemini API Call ---
+        async function callGeminiApi(history) {
+            const apiKey = "AIzaSyCJPZaLsbyaCehMyjHERioggJUO_dMIvZI"; // Handled by environment
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            
+            // --- UPDATED & STRICTER SYSTEM PROMPT ---
+            const systemPrompt = `You are 'Socratic Mind,' an expert AI math tutor for 12th-grade students. Your personality is patient, encouraging, and endlessly curious. Your SOLE method of teaching is the Socratic method.
+
+            **Core Directive: NEVER give a direct answer or solve a step for the student.** Your entire purpose is to guide them to find the answer themselves through a structured conversation.
+
+            **Your Interaction Flow MUST follow these steps:**
+            1.  **Acknowledge & Ask:** When the student presents a new problem, first acknowledge it positively (e.g., "Great problem! Let's break it down."). Then, ask a very broad, open-ended question to get them started. Examples: "What's the first thing that comes to mind here?", "What do you think the first step could be?", or "Have you seen a problem like this before?".
+            2.  **Guide Step-by-Step:** Based on their response, guide them through the VERY NEXT logical step by asking a targeted question.
+                * If they are correct, praise them ("Exactly! 🎉 Now that we've done that, what should we do next?") and ask the next guiding question.
+                * If they are incorrect, gently correct them by asking a question that reveals the mistake. Example: "That's a good thought! But what happens to the sign when we move that term across the equals sign?", "You're on the right track, but let's double-check the formula for integration by parts. What is it again?".
+            3.  **One Question ONLY:** You MUST ask only ONE question at a time and then STOP. Wait for the student's reply before continuing. Do not chain questions together.
+            4.  **Break It Down:** For complex problems, focus on one small piece at a time. Don't ask about the entire problem, just the immediate next step.
+            5.  **The Final Step:** ONLY when the student has successfully arrived at the final answer on their own, you can then confirm their answer and provide the full, clean solution for their reference. Start this final message with "You've got it! Fantastic work! 🎉 Here is the complete solution for your notes:".
+
+            **Style Rules:**
+            - **Tone:** Always be friendly, patient, and motivating. Use emojis like 🤔, 💡, 👍, 🎉.
+            - **LaTeX:** Use LaTeX for ALL math notation (e.g., $x^2$).`;
+
+            const payload = {
+                contents: history,
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+            };
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const result = await response.json();
+            if (result.candidates && result.candidates.length > 0) {
+                return result.candidates[0].content.parts[0].text;
+            }
+            return "I'm not sure how to respond to that. Could you try rephrasing?";
+        }
+
+        // --- Main Logic ---
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const userInput = problemInput.value.trim();
+            if (!userInput) return;
+
+            triggerFallingDigits(userInput);
+            appendMessage('user', userInput);
+            chatHistory.push({ role: 'user', parts: [{ text: userInput }] });
+
+            problemInput.value = '';
+            problemInput.style.height = 'auto';
+            submitButton.disabled = true;
+
+            try {
+                const solutionText = await callGeminiApi(chatHistory);
+                chatHistory.push({ role: 'model', parts: [{ text: solutionText }] });
+
+                // Determine bot reaction from response
+                if (["Correct!", "Perfect!", "Exactly!", "Great job!", "You've got it!"].some(kw => solutionText.includes(kw))) {
+                    setBotState('happy');
+                } else if (["That's a good try", "You're close!", "Let's double-check"].some(kw => solutionText.includes(kw))) {
+                    setBotState('puzzled');
+                } else {
+                    setBotState('default');
+                }
+
+                appendMessage('ai', solutionText);
+                await MathJax.typesetPromise();
+
+            } catch (error) {
+                console.error('Error:', error);
+                appendMessage('ai', '<p>Oops! Something went wrong. Please try again.</p>');
+            } finally {
+                submitButton.disabled = false;
+                // Reset bot state after a delay
+                setTimeout(() => setBotState('default'), 2000);
+            }
+        });
+        
+        problemInput.addEventListener('input', () => {
+            problemInput.style.height = 'auto';
+            problemInput.style.height = (problemInput.scrollHeight) + 'px';
+            setBotState('curious');
+        });
+        problemInput.addEventListener('blur', () => {
+            setBotState('default');
+        });
+
+        // Initial welcome message
+        appendMessage('ai', "Hello! I'm Socratic Mind. Let's solve some problems together! 🚀");
+    </script>
+</body>
+</html>
